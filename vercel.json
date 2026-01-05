@@ -1,40 +1,5 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "routes": [
-    {
-      "src": "^/(.*\\.(js|css|png|jpg|jpeg|gif|ico|json|svg|woff|woff2|ttf|eot))$",
-      "dest": "/$1"
-    },
-    {
-      "src": "^/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "^/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "^/favicon\\.ico$",
-      "dest": "/favicon.ico"
-    },
-    {
-      "src": "^/logo(.*)$",
-      "dest": "/logo$1"
-    },
-    {
-      "src": "^/logo512\\.png$",
-      "dest": "/logo512.png"
-    },
-    {
-      "src": "^/manifest\\.json$",
-      "dest": "/manifest.json"
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
-    }
+    { "source": "/(.*)", "destination": "/" }
   ]
 }
