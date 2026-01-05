@@ -5,6 +5,10 @@
   ],
   "routes": [
     {
+      "src": "^/(.*\\.(js|css|png|jpg|jpeg|gif|ico|json|svg|woff|woff2|ttf|eot))$",
+      "dest": "/$1"
+    },
+    {
       "src": "^/static/(.*)",
       "dest": "/static/$1"
     },
@@ -13,7 +17,7 @@
       "dest": "/assets/$1"
     },
     {
-      "src": "^/favicon.ico$",
+      "src": "^/favicon\\.ico$",
       "dest": "/favicon.ico"
     },
     {
@@ -21,20 +25,12 @@
       "dest": "/logo$1"
     },
     {
-      "src": "^/logo512.png$",
+      "src": "^/logo512\\.png$",
       "dest": "/logo512.png"
     },
     {
-      "src": "^/manifest.json$",
+      "src": "^/manifest\\.json$",
       "dest": "/manifest.json"
-    },
-    {
-      "src": "^/index.html$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^/(.*)\\.(js|css|png|jpg|jpeg|gif|ico|json|svg|woff|woff2|ttf|eot)$",
-      "dest": "/$1.$2"
     },
     {
       "src": "/.*",
