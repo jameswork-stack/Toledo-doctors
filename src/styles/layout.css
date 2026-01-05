@@ -1,0 +1,88 @@
+/* Main layout styles */
+.main-content {
+  margin-left: 250px;
+  padding: 80px 20px 20px;
+  transition: margin 0.3s ease-in-out;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+/* Header styles */
+.app-header {
+  background: #003d7a;
+  color: white;
+  position: fixed;
+  top: 0;
+  left: 250px;
+  right: 0;
+  height: fit-content;
+  display: flex;
+  align-items: center;
+  z-index: 900;
+  transition: left 0.3s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 10px 0;
+}
+
+.header-content {
+  width: 100%;
+  padding: 0 20px;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+}
+
+.app-header h1 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 10px;
+}
+.wrap {
+  display: flex;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .main-content {
+    padding: 80px 15px 20px;
+  }
+}
+
+@media (max-width: 767px) {
+  .main-content {
+    margin-left: 0;
+    padding: 70px 15px 20px;
+  }
+  
+  .app-header {
+    left: 0;
+    justify-content: center;
+    padding: 0 15px 0 60px;
+    height: 60px;
+  }
+  
+  .app-header h1 {
+    font-size: 18px;
+    text-align: center;
+  }
+}
+
+/* Page content container */
+.page-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* Responsive utilities */
+@media (max-width: 576px) {
+  .page-container {
+    padding: 15px;
+  }
+}
