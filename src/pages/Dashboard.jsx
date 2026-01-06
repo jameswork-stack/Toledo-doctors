@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [availableServices, setAvailableServices] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [netIncome, setNetIncome] = useState(0);
 
   const [transactions, setTransactions] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -53,15 +54,21 @@ export default function Dashboard() {
         id: doc.id,
         ...doc.data()
       }));
-      
+
       setTransactions(txList);
-      
-      const revenue = txList.reduce(
-        (sum, tx) => sum + Number(tx.price || 0),
-        0
-      );
+
+      const getTxTotal = (tx) => {
+        if (typeof tx.total === 'number') return tx.total;
+        if (tx.total) return Number(tx.total) || 0;
+        if (Array.isArray(tx.services)) {
+          return tx.services.reduce((s, item) => s + (Number(item.price) || 0), 0);
+        }
+        return 0;
+      };
+
+      const revenue = txList.reduce((sum, tx) => sum + getTxTotal(tx), 0);
       setTotalRevenue(revenue);
-      
+
     });
 
     // Expenses listener with date range
@@ -83,6 +90,7 @@ export default function Dashboard() {
       );
 
       setTotalExpenses(expensesTotal);
+      setNetIncome((prev) => prev); 
       
     });
 
@@ -93,6 +101,10 @@ export default function Dashboard() {
       unsubscribeExpenses();
     };
   }, [startDate, endDate]); // Re-run effect when dates change
+
+  useEffect(() => {
+    setNetIncome(totalRevenue - totalExpenses);
+  }, [totalRevenue, totalExpenses]);
 
   // -----------------------------------------
   // FILTERING FUNCTIONS (Daily / Weekly / Monthly)
@@ -108,9 +120,10 @@ export default function Dashboard() {
     txList.forEach(tx => {
       const date = parseFirestoreTimestamp(tx.finishedAt);
       if (!date) return;
-      
+
       const dateKey = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-      map.set(dateKey, (map.get(dateKey) || 0) + (Number(tx.price) || 0));
+      const tTotal = (typeof tx.total === 'number') ? tx.total : (Number(tx.total) || (Array.isArray(tx.services) ? tx.services.reduce((s, i) => s + (Number(i.price) || 0), 0) : 0));
+      map.set(dateKey, (map.get(dateKey) || 0) + tTotal);
     });
 
     // Sort by date
@@ -125,12 +138,14 @@ export default function Dashboard() {
     txList.forEach(tx => {
       const date = parseFirestoreTimestamp(tx.finishedAt);
       if (!date) return;
-      
+
       const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Start week on Monday
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-      
+
+      const tTotal = (typeof tx.total === 'number') ? tx.total : (Number(tx.total) || (Array.isArray(tx.services) ? tx.services.reduce((s, i) => s + (Number(i.price) || 0), 0) : 0));
+
       const weekKey = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
-      map.set(weekKey, (map.get(weekKey) || 0) + (Number(tx.price) || 0));
+      map.set(weekKey, (map.get(weekKey) || 0) + tTotal);
     });
 
     // Sort by week start date
@@ -145,9 +160,11 @@ export default function Dashboard() {
     txList.forEach(tx => {
       const date = parseFirestoreTimestamp(tx.finishedAt);
       if (!date) return;
-      
+
+      const tTotal = (typeof tx.total === 'number') ? tx.total : (Number(tx.total) || (Array.isArray(tx.services) ? tx.services.reduce((s, i) => s + (Number(i.price) || 0), 0) : 0));
+
       const monthKey = date.toLocaleString('default', { month: 'long', year: 'numeric' });
-      map.set(monthKey, (map.get(monthKey) || 0) + (Number(tx.price) || 0));
+      map.set(monthKey, (map.get(monthKey) || 0) + tTotal);
     });
 
     // Sort by month
@@ -163,12 +180,12 @@ export default function Dashboard() {
       .map(tx => {
         const date = parseFirestoreTimestamp(tx.finishedAt);
         if (!date) return null;
-        
+        const tTotal = (typeof tx.total === 'number') ? tx.total : (Number(tx.total) || (Array.isArray(tx.services) ? tx.services.reduce((s, i) => s + (Number(i.price) || 0), 0) : 0));
         return {
           date,
           label: format(date, 'MMM d, yyyy HH:mm'),
-          revenue: Number(tx.price) || 0,
-          service: tx.serviceName || 'Service',
+          revenue: tTotal || 0,
+          service: Array.isArray(tx.services) ? tx.services.map(s => s.serviceName || s.title).join(', ') : (tx.serviceName || 'Service'),
           customer: tx.customerName || 'Customer'
         };
       })
@@ -281,6 +298,11 @@ export default function Dashboard() {
         <div className="stat-card revenue">
           <h2>Total Revenue</h2>
           <p className="stat-number">₱{totalRevenue.toLocaleString()}</p>
+        </div>
+
+        <div className="stat-card net">
+          <h2>Net Income</h2>
+          <p className="stat-number">₱{netIncome.toLocaleString()}</p>
         </div>
 
         <div className="stat-card expenses">
