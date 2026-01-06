@@ -585,6 +585,49 @@
   color: var(--text-muted);
 }
 
+/* Service list header: search + availability filter */
+.service-list-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.availability-filter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-btn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: white;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.filter-btn.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  box-shadow: 0 6px 18px rgba(67,97,238,0.08);
+}
+
+.service-search {
+  flex: 1 1 320px;
+  max-width: 420px;
+  padding: 10px 14px;
+  font-size: 15px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
 /* Responsive Adjustments */
 @media (max-width: 1024px) {
   .services-container {

@@ -20,12 +20,23 @@ export default function Receipts() {
     const q = query(transactionsCollection);
     const data = await getDocs(q);
 
-    setTransactions(
-      data.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-    );
+    const txs = data.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    txs.sort((a, b) => {
+      const getTime = (t) => {
+        if (!t) return 0;
+        if (typeof t.toDate === 'function') return t.toDate().getTime();
+        const parsed = new Date(t).getTime();
+        return Number.isNaN(parsed) ? 0 : parsed;
+      };
+
+      return getTime(b.finishedAt) - getTime(a.finishedAt);
+    });
+
+    setTransactions(txs);
   };
 
   useEffect(() => {
@@ -91,14 +102,26 @@ export default function Receipts() {
     doc.setFontSize(10);
     doc.text(`Customer Name: ${tx.customerName}`, 10, 62);
 
-    const serviceList = tx.services?.map((s) => s.serviceName).join(", ") || "—";
+    const serviceList = tx.services?.map((s) => {
+      const detail = s.details || s.detail || "";
+      return detail ? `${s.serviceName} — ${detail}` : s.serviceName;
+    }).join(", ") || "—";
     doc.text(`Services: ${serviceList}`, 10, 69);
 
-    const totalPrice = typeof tx.total === 'number' ? tx.total : Number(tx.total) || 0;
-    const totalDisplay = `P${Math.round(totalPrice)}`;
-    doc.text(`Total Price: ${totalDisplay}`, 10, 77);
-    doc.text(`Date: ${formattedDate}`, 10, 85);
-    doc.text(`Time: ${formattedTime}`, 10, 92);
+    // totals and discount
+    const subtotal = typeof tx.subtotal === 'number' ? tx.subtotal : (tx.services?.reduce((sum, s) => sum + (Number(s.price) || 0), 0) || 0);
+    const discountPercent = Number(tx.discountPercent) || 0;
+    const discountAmount = typeof tx.discountAmount === 'number' ? tx.discountAmount : Math.round((subtotal * (discountPercent / 100)) * 100) / 100;
+    const finalTotal = typeof tx.total === 'number' ? tx.total : Math.round((subtotal - discountAmount) * 100) / 100;
+
+    doc.text(`Subtotal: P${subtotal.toFixed(2)}`, 10, 74);
+    if (discountPercent > 0) {
+      doc.text(`Discount (${discountPercent}%): -P${discountAmount.toFixed(2)}`, 10, 79);
+    }
+    doc.text(`Total Price: P${finalTotal.toFixed(2)}`, 10, 84);
+
+    doc.text(`Date: ${formattedDate}`, 10, 92);
+    doc.text(`Time: ${formattedTime}`, 10, 97);
 
     doc.line(10, 99, 200, 99);
     doc.text("Thank you for trusting our services!", 105, 115, { align: "center" });
@@ -128,6 +151,7 @@ export default function Receipts() {
             <tr>
               <th>Customer Name</th>
               <th>Services</th>
+              <th>Service Details</th>
               <th>Total Price</th>
               <th>Date & Time</th>
               <th>Actions</th>
@@ -151,6 +175,7 @@ export default function Receipts() {
                 <tr key={tx.id}>
                   <td>{tx.customerName}</td>
                   <td>{tx.services?.map(s => s.serviceName).join(", ") || "—"}</td>
+                  <td>{tx.services?.map(s => s.details || s.detail).filter(Boolean).join(", ") || "—"}</td>
                   <td>₱{(typeof tx.total === 'number' ? tx.total : Number(tx.total) || 0).toFixed(2)}</td>
                   <td>{formattedDate} {formattedTime}</td>
                   <td>

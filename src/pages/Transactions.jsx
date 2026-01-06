@@ -10,8 +10,10 @@
   export default function POS() {
     const [services, setServices] = useState([]);
     const [customerName, setCustomerName] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
     const [selectedServiceId, setSelectedServiceId] = useState(null);
     const [selectedServices, setSelectedServices] = useState([]);
+    const [discountPercent, setDiscountPercent] = useState(0);
 
     const servicesCollection = collection(db, "services");
     const transactionsCollection = collection(db, "transactions");
@@ -30,12 +32,18 @@
       fetchServices();
     }, []);
 
+    const filteredServices = services.filter((service) =>
+      service.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      service.details?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     const addServiceToCart = (service) => {
       setSelectedServices([
         ...selectedServices,
         {
           id: service.id,
           title: service.title,
+          details: service.details || service.detail || "",
           price: service.price,
           timestamp: new Date().getTime(),
         },
@@ -127,15 +135,32 @@
       // Prepare table data
       const headers = [['Service', 'Price (P)']];
       const data = transactionData.services.map(service => [
-        service.serviceName,
+        service.serviceName + (service.details ? ` — ${service.details}` : ''),
         `P${Math.round(parseFloat(service.price) || 0)}`
       ]);
 
-      // Add total row (rounded, P-prefixed)
-      const total = transactionData.services.reduce((sum, service) => sum + parseFloat(service.price || 0), 0);
+      // Calculate totals
+      const subtotal = transactionData.services.reduce((sum, service) => sum + parseFloat(service.price || 0), 0);
+      const discount = parseFloat(transactionData.discountPercent || 0);
+      const discountAmount = Math.round((subtotal * (discount / 100)) * 100) / 100;
+      const finalTotal = Math.round((subtotal - discountAmount) * 100) / 100;
+
+      // Add subtotal, discount and total rows
+      data.push([
+        { content: 'SUBTOTAL', styles: { fontStyle: 'bold' }},
+        { content: `P${Math.round(subtotal)}`, styles: { fontStyle: 'bold' }}
+      ]);
+
+      if (discount > 0) {
+        data.push([
+          { content: `DISCOUNT (${discount}% )`, styles: { fontStyle: 'bold' }},
+          { content: `-P${discountAmount}`, styles: { fontStyle: 'bold' }}
+        ]);
+      }
+
       data.push([
         { content: 'TOTAL', styles: { fontStyle: 'bold' }},
-        { content: `P${Math.round(total)}`, styles: { fontStyle: 'bold' }}
+        { content: `P${finalTotal}`, styles: { fontStyle: 'bold' }}
       ]);
       
       // Generate table
@@ -191,14 +216,23 @@
 
       try {
         // Create the transaction
+        const subtotal = calculateTotal();
+        const discountNum = Math.max(0, Math.min(100, Number(discountPercent) || 0));
+        const discountAmount = Math.round((subtotal * (discountNum / 100)) * 100) / 100;
+        const discountedTotal = Math.round((subtotal - discountAmount) * 100) / 100;
+
         const docRef = await addDoc(transactionsCollection, {
           customerName,
           services: selectedServices.map((service) => ({
             serviceId: service.id,
             serviceName: service.title,
+            details: service.details || service.detail || "",
             price: service.price,
           })),
-          total: calculateTotal(),
+          subtotal,
+          discountPercent: discountNum,
+          discountAmount,
+          total: discountedTotal,
           finishedAt: new Date(),
         });
 
@@ -212,10 +246,14 @@
             customerName,
             services: selectedServices.map((service) => ({
               serviceName: service.title,
+              details: service.details || service.detail || "",
               price: service.price,
             })),
             finishedAt: new Date(),
-            total: calculateTotal(),
+            subtotal,
+            discountPercent: discountNum,
+            discountAmount,
+            total: discountedTotal,
           });
         } catch (pdfError) {
           console.error('PDF generation failed:', pdfError);
@@ -264,8 +302,28 @@
                 ))}
               </div>
 
+              <div className="discount-row">
+                <label>Discount (%)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={discountPercent}
+                  onChange={(e) => setDiscountPercent(e.target.value)}
+                  className="discount-input"
+                />
+              </div>
+
               <div className="cart-total">
-                <strong>Total: ₱{calculateTotal()}</strong>
+                <div>
+                  <div>Subtotal: ₱{calculateTotal().toFixed(2)}</div>
+                  <div>Discount: {Math.max(0, Math.min(100, Number(discountPercent) || 0))}%</div>
+                  <strong>
+                    Total: ₱{
+                      (Math.round((calculateTotal() - (calculateTotal() * (Math.max(0, Math.min(100, Number(discountPercent) || 0)) / 100))) * 100) / 100).toFixed(2)
+                    }
+                  </strong>
+                </div>
               </div>
 
               <button className="checkout-btn" onClick={finishServices}>
@@ -275,8 +333,22 @@
           )}
         </div>
 
+        <div className="search-container">
+          <input
+            type="text"
+            placeholder="Search services..."
+            className="service-search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
         <div className="services-grid">
-          {services.map((service) => (
+          {filteredServices.length === 0 && (
+            <p className="no-results">No services found.</p>
+          )}
+
+          {filteredServices.map((service) => (
             <div
               className={`service-card ${
                 service.available ? "available" : "not-available"

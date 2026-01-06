@@ -30,6 +30,8 @@ export default function Services() {
   const [services, setServices] = useState([]);
   const [editingService, setEditingService] = useState(null);
   const [currentUserRole, setCurrentUserRole] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [availabilityFilter, setAvailabilityFilter] = useState("all");
 
   const servicesCollection = collection(db, "services");
 
@@ -48,6 +50,18 @@ export default function Services() {
   useEffect(() => {
     fetchServices();
   }, []);
+
+  const filteredServices = services.filter((s) => {
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      s.title?.toLowerCase().includes(q) ||
+      s.details?.toLowerCase().includes(q);
+
+    if (availabilityFilter === "all") return matchesSearch;
+    if (availabilityFilter === "available") return matchesSearch && s.available === true;
+    return matchesSearch && s.available === false;
+  });
 
   // Add or Update Service
   const saveService = async (e) => {
@@ -240,9 +254,43 @@ export default function Services() {
       </form>
 
       {/* Service List */}
+      <div className="service-list-header">
+        <div className="availability-filter">
+          <button
+            type="button"
+            className={`filter-btn ${availabilityFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setAvailabilityFilter('all')}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            className={`filter-btn ${availabilityFilter === 'available' ? 'active' : ''}`}
+            onClick={() => setAvailabilityFilter('available')}
+          >
+            Available
+          </button>
+          <button
+            type="button"
+            className={`filter-btn ${availabilityFilter === 'unavailable' ? 'active' : ''}`}
+            onClick={() => setAvailabilityFilter('unavailable')}
+          >
+            Unavailable
+          </button>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Search services..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="service-search"
+        />
+      </div>
+
       <div className="service-list">
-        {services.length > 0 ? (
-          services.map((service) => (
+        {filteredServices.length > 0 ? (
+          filteredServices.map((service) => (
             <div
               className={`service-card ${service.available ? "available" : "not-available"}`}
               key={service.id}
@@ -296,7 +344,7 @@ export default function Services() {
           <div className="empty-state">
             <FiInfo size={48} className="empty-icon" />
             <h3>No Services Found</h3>
-            <p>Add your first service to get started</p>
+            <p>{services.length === 0 ? 'Add your first service to get started' : 'No services match your search'}</p>
           </div>
         )}
       </div>
