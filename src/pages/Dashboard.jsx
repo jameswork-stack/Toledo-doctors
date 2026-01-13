@@ -29,6 +29,9 @@ export default function Dashboard() {
   const [startDate, setStartDate] = useState(startOfDay(subDays(new Date(), 30)));
   const [endDate, setEndDate] = useState(endOfDay(new Date()));
   const [isLoading, setIsLoading] = useState(true);
+  const [dailyServiceCounts, setDailyServiceCounts] = useState({});
+  const [totalServicesToday, setTotalServicesToday] = useState(0);
+  const [showServiceModal, setShowServiceModal] = useState(false);
 
   const servicesCollection = collection(db, "services");
   const transactionsCollection = collection(db, "transactions");
@@ -69,6 +72,30 @@ export default function Dashboard() {
       const revenue = txList.reduce((sum, tx) => sum + getTxTotal(tx), 0);
       setTotalRevenue(revenue);
 
+      // Calculate service counts for today only
+      const today = new Date();
+      const todayStart = startOfDay(today);
+      const todayEnd = endOfDay(today);
+      const serviceCounts = {};
+      let todayServices = 0;
+
+      txList.forEach(tx => {
+        if (Array.isArray(tx.services)) {
+          const txDate = tx.finishedAt?.toDate ? tx.finishedAt.toDate() : new Date(tx.finishedAt);
+          
+          // Only process transactions from today
+          if (txDate >= todayStart && txDate <= todayEnd) {
+            tx.services.forEach(service => {
+              const serviceName = service.serviceName || service.title || 'Unknown Service';
+              serviceCounts[serviceName] = (serviceCounts[serviceName] || 0) + 1;
+              todayServices++;
+            });
+          }
+        }
+      });
+
+      setDailyServiceCounts(serviceCounts);
+      setTotalServicesToday(todayServices);
     });
 
     // Expenses listener with date range
@@ -310,6 +337,12 @@ export default function Dashboard() {
           <p className="stat-number">₱{totalExpenses.toLocaleString()}</p>
         </div>
 
+        <div className="stat-card services" onClick={() => setShowServiceModal(true)} style={{ cursor: 'pointer' }}>
+          <h2>Services Today</h2>
+          <p className="stat-number">{totalServicesToday}</p>
+          <p className="view-details">Click to view details</p>
+        </div>
+
       </div>
 
       {/* ------------------------------ */}
@@ -430,7 +463,8 @@ export default function Dashboard() {
                     `Date: ${label}`,
                     `Service: ${payload[0].payload.service}`,
                     `Customer: ${payload[0].payload.customer}`,
-                    `Amount: ₱${payload[0].payload.revenue.toLocaleString()}`
+                    `Amount: ₱${payload[0].payload.revenue.toLocaleString()}`,
+                    `Daily Services: ${payload[0].payload.dailyServices}`
                   ].join('<br/>');
                 }}
                 contentStyle={{
@@ -456,6 +490,131 @@ export default function Dashboard() {
           <div className="no-transactions">No transactions found in the selected date range.</div>
         )}
       </div>
+
+      {/* Service Details Modal */}
+      {showServiceModal && (
+        <div className="modal-overlay" onClick={() => setShowServiceModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Service Breakdown - {new Date().toLocaleDateString()}</h2>
+              <button className="close-button" onClick={() => setShowServiceModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              {Object.keys(dailyServiceCounts).length > 0 ? (
+                <div className="service-list">
+                  {Object.entries(dailyServiceCounts)
+                    .sort((a, b) => b[1] - a[1]) // Sort by count descending
+                    .map(([service, count]) => (
+                      <div key={service} className="service-item">
+                        <span className="service-name">{service}</span>
+                        <span className="service-count">{count}</span>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p>No services recorded for today.</p>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="close-btn" onClick={() => setShowServiceModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+        }
+        .modal-content {
+          background: white;
+          padding: 20px;
+          border-radius: 8px;
+          width: 90%;
+          max-width: 500px;
+          max-height: 80vh;
+          overflow-y: auto;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid #e0e0e0;
+        }
+        .modal-header h2 {
+          margin: 0;
+          font-size: 1.5rem;
+          color: #333;
+        }
+        .close-button {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+          color: #666;
+        }
+        .service-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .service-item {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px;
+          background: #f8f9fa;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+        .service-item:hover {
+          background: #e9ecef;
+        }
+        .service-name {
+          font-weight: 500;
+          color: #333;
+        }
+        .service-count {
+          background: #9C27B0;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 0.8rem;
+          font-weight: bold;
+        }
+        .modal-footer {
+          margin-top: 20px;
+          text-align: right;
+        }
+        .close-btn {
+          background: #9C27B0;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.9rem;
+        }
+        .close-btn:hover {
+          background: #7B1FA2;
+        }
+        .view-details {
+          font-size: 0.8rem;
+          margin-top: 5px;
+          opacity: 0.8;
+        }
+      `}</style>
     </div>
   );
 }
