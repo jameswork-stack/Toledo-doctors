@@ -26,7 +26,9 @@ export default function Reports() {
       ...doc.data(),
     }));
 
-    setExpenses(data);
+    // Sort expenses by date in descending order (newest first)
+    const sortedData = data.sort((a, b) => b.date.seconds - a.date.seconds);
+    setExpenses(sortedData);
 
     // Compute total
     const total = data.reduce((sum, e) => sum + Number(e.amount), 0);
