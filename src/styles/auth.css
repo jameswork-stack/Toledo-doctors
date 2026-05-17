@@ -81,6 +81,17 @@
   text-decoration: underline;
 }
 
+/* Error message styling */
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  border: 1px solid #fcc;
+}
+
 /* Optional: Responsive */
 @media (max-width: 480px) {
   .auth-container form {

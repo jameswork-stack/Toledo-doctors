@@ -1,18 +1,20 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBYPq14JJub42T8JigNwVabxvv6MKTxm_8",
-  authDomain: "toledo-doctors.firebaseapp.com",
-  projectId: "toledo-doctors",
-  storageBucket: "toledo-doctors.firebasestorage.app",
-  messagingSenderId: "17652214810",
-  appId: "1:17652214810:web:d192823453693a48a8b5a3",
-  measurementId: "G-4C0W7XCVX3"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY, // or process.env if CRA
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
 export const db = getFirestore(app);
+export const auth = getAuth(app);

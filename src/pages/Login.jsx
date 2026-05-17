@@ -1,34 +1,57 @@
 // src/pages/Login.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 import "../styles/auth.css";
 import logo from "/images/logo.jpg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Hardcoded accounts
-  const accounts = [
-    { email: "admin@clinic.com", password: "admin123", role: "admin" },
-    { email: "staff1@clinic.com", password: "staff123", role: "staff" },
-    { email: "staff2@clinic.com", password: "staff123", role: "staff" },
-  ];
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    const user = accounts.find(
-      (acc) => acc.email === email && acc.password === password
-    );
+    try {
+      // Sign in with Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-    if (user) {
-      localStorage.setItem("userRole", user.role); // FIXED
-      localStorage.setItem("userEmail", user.email);
-      navigate("/dashboard");
-    } else {
-      alert("Invalid email or password");
+      // Fetch user role from Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const userRole = userData.role || "staff"; // Default to staff if no role specified
+        
+        // Store user info in localStorage
+        localStorage.setItem("userRole", userRole);
+        localStorage.setItem("userEmail", user.email);
+        localStorage.setItem("userId", user.uid);
+        
+        navigate("/dashboard");
+      } else {
+        // If user document doesn't exist, create it with default staff role
+        setError("User account not found in database. Please contact administrator.");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+        setError("Invalid email or password");
+      } else if (err.code === "auth/invalid-credential") {
+        setError("Invalid email or password");
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,6 +60,8 @@ export default function Login() {
       <form onSubmit={handleLogin}>
         <img src={logo} alt="logo" style={{ width: "250px" }} />
         <h1>Login</h1>
+
+        {error && <div className="error-message">{error}</div>}
 
         <input
           type="email"
@@ -54,7 +79,9 @@ export default function Login() {
           required
         />
 
-        <button type="submit">Login</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
       </form>
     </div>
   );
