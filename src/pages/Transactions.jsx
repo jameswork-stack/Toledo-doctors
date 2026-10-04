@@ -38,17 +38,18 @@
     );
 
     const addServiceToCart = (service) => {
-      setSelectedServices([
-        ...selectedServices,
-        {
-          id: service.id,
-          title: service.title,
-          details: service.details || service.detail || "",
-          price: service.price,
-          timestamp: new Date().getTime(),
-        },
-      ]);
-    };
+  setSelectedServices([
+    ...selectedServices,
+    {
+      id: service.id,
+      title: service.title,
+      details: service.details || service.detail || "",
+      price: Number(service.price) || 0,
+      totalCost: Number(service.totalCost) || 0,
+      timestamp: new Date().getTime(),
+    },
+  ]);
+};
 
     const removeServiceFromCart = (timestamp) => {
       setSelectedServices(
@@ -62,6 +63,13 @@
         0
       );
     };
+
+    const calculateTotalCost = () => {
+  return selectedServices.reduce(
+    (total, service) => total + (Number(service.totalCost) || 0),
+    0
+  );
+};  
 
     const formatDate = (date) => {
       return new Date(date).toLocaleString('en-US', {
@@ -204,6 +212,7 @@
     };
 
     const finishServices = async () => {
+      
       if (!customerName.trim()) {
         alert("Please enter customer name");
         return;
@@ -217,24 +226,30 @@
       try {
         // Create the transaction
         const subtotal = calculateTotal();
+        const totalCost = calculateTotalCost();
         const discountNum = Math.max(0, Math.min(100, Number(discountPercent) || 0));
         const discountAmount = Math.round((subtotal * (discountNum / 100)) * 100) / 100;
         const discountedTotal = Math.round((subtotal - discountAmount) * 100) / 100;
 
         const docRef = await addDoc(transactionsCollection, {
-          customerName,
-          services: selectedServices.map((service) => ({
-            serviceId: service.id,
-            serviceName: service.title,
-            details: service.details || service.detail || "",
-            price: service.price,
-          })),
-          subtotal,
-          discountPercent: discountNum,
-          discountAmount,
-          total: discountedTotal,
-          finishedAt: new Date(),
-        });
+  customerName,
+
+  services: selectedServices.map((service) => ({
+    serviceId: service.id,
+    serviceName: service.title,
+    details: service.details || service.detail || "",
+    price: Number(service.price) || 0,
+    totalCost: Number(service.totalCost) || 0,
+  })),
+
+  subtotal,
+  totalCost,
+  discountPercent: discountNum,
+  discountAmount,
+  total: discountedTotal,
+
+  finishedAt: new Date(),
+});
 
         // Show a success message when the invoice is saved
         alert('Invoice created successfully!');

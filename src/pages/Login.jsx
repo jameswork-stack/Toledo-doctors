@@ -7,7 +7,7 @@ import { auth, db } from "../firebase";
 import "../styles/auth.css";
 import logo from "/images/logo.jpg";
 
-export default function Login() {
+export default function Login() { 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

@@ -17,7 +17,8 @@ import "../styles/dashboard.css";
 
 export default function Dashboard() {
   const [totalServices, setTotalServices] = useState(0);
-  const [availableServices, setAvailableServices] = useState(0);
+const [totalServicesCost, setTotalServicesCost] = useState(0);
+const [availableServices, setAvailableServices] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [netIncome, setNetIncome] = useState(0);
@@ -40,10 +41,16 @@ export default function Dashboard() {
   useEffect(() => {
     // Services listener
     const unsubscribeServices = onSnapshot(servicesCollection, (snapshot) => {
-      const servicesList = snapshot.docs.map(doc => doc.data());
-      setTotalServices(servicesList.length);
-      setAvailableServices(servicesList.filter(s => s.available).length);
-    });
+  const servicesList = snapshot.docs.map(doc => doc.data());
+
+  setTotalServices(servicesList.length);
+
+  setAvailableServices(
+    servicesList.filter(s => s.available).length
+  );
+
+  // Calculate total cost of all services
+});
 
     // Transactions listener with date range
     let txQuery = query(
@@ -72,6 +79,31 @@ export default function Dashboard() {
       const revenue = txList.reduce((sum, tx) => sum + getTxTotal(tx), 0);
       setTotalRevenue(revenue);
 
+      // Calculate actual service costs from completed invoices
+const serviceCosts = txList.reduce(
+  (sum, tx) => {
+    // New transactions have totalCost saved directly
+    if (tx.totalCost !== undefined && tx.totalCost !== null) {
+      return sum + (Number(tx.totalCost) || 0);
+    }
+
+    // Fallback for older transactions
+    // that don't have a transaction-level totalCost
+    if (Array.isArray(tx.services)) {
+      return sum + tx.services.reduce(
+        (serviceSum, service) =>
+          serviceSum + (Number(service.totalCost) || 0),
+        0
+      );
+    }
+
+    return sum;
+  },
+  0
+);
+
+setTotalServicesCost(serviceCosts);
+
       // Calculate service counts for today only
       const today = new Date();
       const todayStart = startOfDay(today);
@@ -90,6 +122,7 @@ export default function Dashboard() {
               serviceCounts[serviceName] = (serviceCounts[serviceName] || 0) + 1;
               todayServices++;
             });
+            
           }
         }
       });
@@ -130,8 +163,10 @@ export default function Dashboard() {
   }, [startDate, endDate]); // Re-run effect when dates change
 
   useEffect(() => {
-    setNetIncome(totalRevenue - totalExpenses);
-  }, [totalRevenue, totalExpenses]);
+  const income = totalRevenue - totalServicesCost - totalExpenses;
+
+  setNetIncome(income);
+}, [totalRevenue, totalServicesCost, totalExpenses]);
 
   // -----------------------------------------
   // FILTERING FUNCTIONS (Daily / Weekly / Monthly)
@@ -316,6 +351,16 @@ export default function Dashboard() {
           <h2>Total Services</h2>
           <p className="stat-number">{totalServices}</p>
         </div>
+
+        <div className="stat-card services-cost">
+  <h2>Total Services Cost</h2>
+  <p className="stat-number">
+    ₱{totalServicesCost.toLocaleString("en-PH", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}
+  </p>
+</div>
 
         <div className="stat-card available">
           <h2>Available Services</h2>

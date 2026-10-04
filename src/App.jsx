@@ -97,8 +97,30 @@ function Header() {
             {/* Modal Content */}
             <div className="maintenance-body">
 
+              {/* New Feature Announcement */}
+<div className="maintenance-warning">
+  <strong>🚀 New System Feature Announcement 4/10/2026</strong>
+
+  <p>
+    A new feature has been added to the system to improve service
+    management and financial tracking.
+  </p>
+
+  <p>
+    💰 <strong>Service Cost Feature</strong> – The Service Management
+    section now allows the actual cost of each service to be recorded
+    separately from its selling price.
+  </p>
+
+  <p>
+    📊 <strong>Dashboard Service Cost Tracking</strong> – The Dashboard
+    now displays the actual service costs from completed invoices,
+    providing a more accurate view of service costs and income.
+  </p>
+</div>
+
               <div className="maintenance-warning">
-                <strong>🔔 Early Maintenance Notice</strong>
+                <strong>🔔 Early Maintenance Notice 9/5/2026</strong>
                 <p> This is an early reminder that the system's annual maintenance period is approaching. System maintenance is scheduled once every year to help keep the system secure, stable, and operating properly. </p>
                 <p> Since the system is approaching its one-year maintenance period, this notice is being provided in advance to allow sufficient time for maintenance arrangements and preparation. </p>
               </div>
