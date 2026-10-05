@@ -152,6 +152,7 @@ export default function Receipts() {
               <th>Customer Name</th>
               <th>Services</th>
               <th>Service Details</th>
+              <th>Total Cost</th>
               <th>Total Price</th>
               <th>Date & Time</th>
               <th>Actions</th>
@@ -176,7 +177,13 @@ export default function Receipts() {
                   <td>{tx.customerName}</td>
                   <td>{tx.services?.map(s => s.serviceName).join(", ") || "—"}</td>
                   <td>{tx.services?.map(s => s.details || s.detail).filter(Boolean).join(", ") || "—"}</td>
-                  <td>₱{(typeof tx.total === 'number' ? tx.total : Number(tx.total) || 0).toFixed(2)}</td>
+                  <td>
+  ₱{(Number(tx.totalCost) || 0).toFixed(2)}
+</td>
+
+<td>
+  ₱{(typeof tx.total === 'number' ? tx.total : Number(tx.total) || 0).toFixed(2)}
+</td>
                   <td>{formattedDate} {formattedTime}</td>
                   <td>
                     <button className="receipt-btn" onClick={() => generatePDF(tx)}>
