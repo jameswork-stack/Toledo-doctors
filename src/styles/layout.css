@@ -6,7 +6,6 @@
   min-height: 100vh;
   background-color: #f5f7fa;
 }
-
 /* Header */
 
 .app-header {
@@ -92,23 +91,17 @@
 }
 
 .system-info-btn {
-  width: 34px;
-  height: 34px;
-  border: 2px solid white;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgb(196, 196, 196);
   border-radius: 50%;
   background: transparent;
-  color: white;
+  color: rgb(207, 207, 207);
   font-size: 19px;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
-}
-
-.system-info-btn:hover,
-.system-info-btn:focus-visible {
-  background: white;
-  color: #003d7a;
 }
 
 .system-info-dropdown {

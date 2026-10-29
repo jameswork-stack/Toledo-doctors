@@ -97,7 +97,7 @@ export default function Navbar() {
         </li>
         </ul>
       </div>
-      {isMenuOpen && (
+        {isMenuOpen && (
         <div 
           className="overlay" 
           onClick={() => setIsMenuOpen(false)}
