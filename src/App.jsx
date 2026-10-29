@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from "./components/Navbar";
 
 // Pages
@@ -29,6 +29,8 @@ function Header() {
   const location = useLocation();
   const [pageTitle, setPageTitle] = useState('Dashboard');
   const [showMaintenance, setShowMaintenance] = useState(false);
+  const [showSystemInfo, setShowSystemInfo] = useState(false);
+  const headerActionsRef = useRef(null);
 
   useEffect(() => {
     const path = location.pathname;
@@ -44,6 +46,27 @@ function Header() {
     setPageTitle(titles[path] || 'Dashboard');
   }, [location]);
 
+  useEffect(() => {
+    if (!showSystemInfo) return undefined;
+
+    const closeOnOutsideClick = (event) => {
+      if (!headerActionsRef.current?.contains(event.target)) {
+        setShowSystemInfo(false);
+      }
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setShowSystemInfo(false);
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [showSystemInfo]);
+
   return (
     <>
       <header className="app-header">
@@ -55,17 +78,41 @@ function Header() {
             <h1>Toledo Doctors & Diagnostic Center</h1>
           </div>
 
-          {/* Maintenance Alert Button */}
-          <button
-            className="maintenance-alert-btn"
-            onClick={() => setShowMaintenance(true)}
-            title="System Maintenance Information"
-          >
-            🔔
-            <span>Maintenance</span>
-          </button>
+          <div className="header-actions" ref={headerActionsRef}>
+            {/* Maintenance Alert Button */}
+            <button
+              className="maintenance-alert-btn"
+              onClick={() => setShowMaintenance(true)}
+              title="System Maintenance Information"
+            >
+              🔔
+              <span>Maintenance</span>
+            </button>
 
-          
+            <button
+              className="system-info-btn"
+              type="button"
+              aria-label="System information"
+              aria-expanded={showSystemInfo}
+              aria-controls="system-info-dropdown"
+              onClick={() => setShowSystemInfo((isOpen) => !isOpen)}
+            >
+              ?
+            </button>
+
+            {showSystemInfo && (
+              <div
+                className="system-info-dropdown"
+                id="system-info-dropdown"
+                role="dialog"
+                aria-label="System information"
+              >
+                <strong>Service Management System</strong>
+                <span>Version 1.1.0.0</span>
+                <span>Developed by James Francis Rodriguez</span>
+              </div>
+            )}
+          </div>
 
         </div>
       </header>

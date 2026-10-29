@@ -84,6 +84,56 @@
   transform: translateY(0);
 }
 
+.header-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.system-info-btn {
+  width: 34px;
+  height: 34px;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: transparent;
+  color: white;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.system-info-btn:hover,
+.system-info-btn:focus-visible {
+  background: white;
+  color: #003d7a;
+}
+
+.system-info-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(280px, calc(100vw - 32px));
+  padding: 14px 16px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.system-info-dropdown strong {
+  color: #003d7a;
+}
+
 
 /* ================================= */
 /* Maintenance Modal */
