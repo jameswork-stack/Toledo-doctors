@@ -33,6 +33,7 @@ const [availableServices, setAvailableServices] = useState(0);
   const [dailyServiceCounts, setDailyServiceCounts] = useState({});
   const [totalServicesToday, setTotalServicesToday] = useState(0);
   const [showServiceModal, setShowServiceModal] = useState(false);
+  const [serviceDate, setServiceDate] = useState(new Date());
 
   const servicesCollection = collection(db, "services");
   const transactionsCollection = collection(db, "transactions");
@@ -104,31 +105,6 @@ const serviceCosts = txList.reduce(
 
 setTotalServicesCost(serviceCosts);
 
-      // Calculate service counts for today only
-      const today = new Date();
-      const todayStart = startOfDay(today);
-      const todayEnd = endOfDay(today);
-      const serviceCounts = {};
-      let todayServices = 0;
-
-      txList.forEach(tx => {
-        if (Array.isArray(tx.services)) {
-          const txDate = tx.finishedAt?.toDate ? tx.finishedAt.toDate() : new Date(tx.finishedAt);
-          
-          // Only process transactions from today
-          if (txDate >= todayStart && txDate <= todayEnd) {
-            tx.services.forEach(service => {
-              const serviceName = service.serviceName || service.title || 'Unknown Service';
-              serviceCounts[serviceName] = (serviceCounts[serviceName] || 0) + 1;
-              todayServices++;
-            });
-            
-          }
-        }
-      });
-
-      setDailyServiceCounts(serviceCounts);
-      setTotalServicesToday(todayServices);
     });
 
     // Expenses listener with date range
@@ -161,6 +137,37 @@ setTotalServicesCost(serviceCosts);
       unsubscribeExpenses();
     };
   }, [startDate, endDate]); // Re-run effect when dates change
+
+  useEffect(() => {
+    const serviceDateQuery = query(
+      collection(db, "transactions"),
+      where('finishedAt', '>=', Timestamp.fromDate(startOfDay(serviceDate))),
+      where('finishedAt', '<=', Timestamp.fromDate(endOfDay(serviceDate)))
+    );
+
+    return onSnapshot(serviceDateQuery, (snapshot) => {
+      const serviceCounts = {};
+      let serviceCount = 0;
+
+      snapshot.docs.forEach((transaction) => {
+        const services = transaction.data().services;
+        if (!Array.isArray(services)) return;
+
+        services.forEach((service) => {
+          const serviceName = service.serviceName || service.title || 'Unknown Service';
+          serviceCounts[serviceName] = (serviceCounts[serviceName] || 0) + 1;
+          serviceCount++;
+        });
+      });
+
+      setDailyServiceCounts(serviceCounts);
+      if (format(serviceDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')) {
+        setTotalServicesToday(serviceCount);
+      }
+    }, (error) => {
+      console.error('Error loading services for selected date:', error);
+    });
+  }, [serviceDate]);
 
   useEffect(() => {
   const income = totalRevenue - totalServicesCost - totalExpenses;
@@ -541,10 +548,38 @@ setTotalServicesCost(serviceCosts);
         <div className="modal-overlay" onClick={() => setShowServiceModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Service Breakdown - {new Date().toLocaleDateString()}</h2>
+              <h2>Service Breakdown - {format(serviceDate, 'MMM d, yyyy')}</h2>
               <button className="close-button" onClick={() => setShowServiceModal(false)}>×</button>
             </div>
             <div className="modal-body">
+              <div className="service-date-filter">
+                <label htmlFor="service-date-picker">Filter by exact date</label>
+                <DatePicker
+                  id="service-date-picker"
+                  selected={serviceDate}
+                  onChange={(date) => {
+                    if (date) setServiceDate(date);
+                  }}
+                  dateFormat="MMM d, yyyy"
+                  maxDate={new Date()}
+                  customInput={
+                    <button
+                      type="button"
+                      className="service-date-button"
+                      aria-label="Choose service date"
+                    >
+                      {format(serviceDate, 'MMM d, yyyy')}
+                    </button>
+                  }
+                />
+                <button
+                  type="button"
+                  className="service-today-button"
+                  onClick={() => setServiceDate(new Date())}
+                >
+                  Today
+                </button>
+              </div>
               {Object.keys(dailyServiceCounts).length > 0 ? (
                 <div className="service-list">
                   {Object.entries(dailyServiceCounts)
@@ -557,7 +592,7 @@ setTotalServicesCost(serviceCosts);
                     ))}
                 </div>
               ) : (
-                <p>No services recorded for today.</p>
+                <p>No services recorded for this date.</p>
               )}
             </div>
             <div className="modal-footer">
@@ -614,6 +649,36 @@ setTotalServicesCost(serviceCosts);
           display: flex;
           flex-direction: column;
           gap: 10px;
+        }
+        .service-date-filter {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+        .service-date-filter label {
+          font-weight: 500;
+          color: #333;
+        }
+        .service-date-button,
+        .service-today-button {
+          padding: 8px 10px;
+          border: 1px solid #9C27B0;
+          border-radius: 4px;
+          font: inherit;
+          cursor: pointer;
+        }
+        .service-date-button {
+          min-width: 140px;
+          background: white;
+          color: #333;
+        }
+        .service-today-button {
+          background: #9C27B0;
+          color: white;
+        }
+        .service-today-button:hover {
+          background: #7B1FA2;
         }
         .service-item {
           display: flex;
