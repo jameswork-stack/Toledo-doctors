@@ -8,6 +8,7 @@ import logo from "../images/logo.jpg";
 export default function Receipts() {
   const [transactions, setTransactions] = useState([]);
   const [currentUserRole, setCurrentUserRole] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -38,6 +39,28 @@ export default function Receipts() {
 
     setTransactions(txs);
   };
+
+  const getTransactionDate = (transaction) => {
+    if (!transaction.finishedAt) return new Date();
+    return typeof transaction.finishedAt.toDate === "function"
+      ? transaction.finishedAt.toDate()
+      : new Date(transaction.finishedAt);
+  };
+
+  const filteredTransactions = selectedDate
+    ? transactions.filter((transaction) => {
+        const date = getTransactionDate(transaction);
+        if (Number.isNaN(date.getTime())) return false;
+
+        const localDate = [
+          date.getFullYear(),
+          String(date.getMonth() + 1).padStart(2, "0"),
+          String(date.getDate()).padStart(2, "0"),
+        ].join("-");
+
+        return localDate === selectedDate;
+      })
+    : transactions;
 
   useEffect(() => {
     fetchTransactions();
@@ -145,6 +168,25 @@ export default function Receipts() {
     <div className="receipts-container">
       <h1 className="page-title">Receipts</h1>
 
+      <div className="receipts-filter">
+        <label htmlFor="receipt-date-filter">Filter by exact date</label>
+        <input
+          id="receipt-date-filter"
+          type="date"
+          value={selectedDate}
+          onChange={(event) => setSelectedDate(event.target.value)}
+        />
+        {selectedDate && (
+          <button
+            className="receipt-filter-clear"
+            type="button"
+            onClick={() => setSelectedDate("")}
+          >
+            Clear date
+          </button>
+        )}
+      </div>
+
       <div className="receipts-table">
         <table>
           <thead>
@@ -159,13 +201,16 @@ export default function Receipts() {
             </tr>
           </thead>
           <tbody>
-            {transactions.map((tx) => {
-              let dateObj = null;
-              if (tx.finishedAt) {
-                dateObj = typeof tx.finishedAt.toDate === "function" ? tx.finishedAt.toDate() : new Date(tx.finishedAt);
-              } else {
-                dateObj = new Date();
-              }
+            {filteredTransactions.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="receipts-empty">
+                  {selectedDate
+                    ? "No receipts found for this date."
+                    : "No receipts found."}
+                </td>
+              </tr>
+            ) : filteredTransactions.map((tx) => {
+              const dateObj = getTransactionDate(tx);
               const formattedDate = dateObj.toLocaleDateString();
               const formattedTime = dateObj.toLocaleTimeString([], {
                 hour: "2-digit",
